@@ -51,8 +51,8 @@ def main():
     html = get_html(REALT_URL)
 
     # Get number of last page
-    page_count = get_page_count(html)
-    #page_count = 1
+    #page_count = get_page_count(html)
+    page_count = 1
     print('Find %d pages' % page_count)
 
     # List with all flats
