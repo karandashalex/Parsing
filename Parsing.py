@@ -1,5 +1,6 @@
 import urllib.request
 from bs4 import BeautifulSoup
+import csv
 
 # Main URL of website realt.by
 REALT_URL = 'https://realt.by/sale/flats/?view=0'
@@ -28,7 +29,9 @@ def parse(html):
     # Find in page all flats and append all of them in list
     header = table.find_all('div', class_='bd-table-item-header')
     flats = []
+    i = 0
     for head in header:
+        i += 1
         pl = head.find_all('div', class_='pl')
         address = head.find('div', class_='ad').a.text.split(',')
         floors = head.find('div', class_='ee').span.text.split('/')
@@ -37,7 +40,11 @@ def parse(html):
             house_type = floors[1].strip().split(' ')[1]
         except:
             house_type = ''
-
+        year = pl[1].span.text.strip().split(' ')[0]
+        try:
+            repare_year = pl[1].span.text.strip().split(' ')[1]
+        except:
+            repare_year = ''
         sity = ''
         street = ''
         house = ''
@@ -73,12 +80,37 @@ def parse(html):
             'total_square': pl[0].span.text.strip().split('/')[0],
             'live_square': pl[0].span.text.strip().split('/')[1],
             'kitchen_square': pl[0].span.text.strip().split('/')[2],
-            'year': pl[1].span.text.strip(),
+            'year': year,
+            'repare_year': repare_year,
             'balcony': pl[2].span.text.strip(),
             'total_price': total_price,
             'price': price
         })
+        if i == 3:
+            break
     return flats
+
+
+# Write all flats in csv-file as dictionary. Russian Windows used delimiter=';' and  lineterminator='\n'
+def write_csv(flats, filename):
+    with open('csv_write_dictwriter.csv', 'w') as f:
+        writer = csv.DictWriter(f, fieldnames=list(flats[0].keys()), quoting=csv.QUOTE_NONNUMERIC, lineterminator='\n',
+                                delimiter=';')
+        writer.writeheader()
+        for flat in flats:
+            writer.writerow(flat)
+
+
+# Read all data from csv-file and return list of dictionaries
+def read_csv(filename):
+    flats_list = []
+    with open('csv_write_dictwriter.csv') as f:
+        reader = csv.DictReader(f, lineterminator='\n', delimiter=';')
+        for row in reader:
+            d = {}
+            d.update(row)
+            flats_list.append(d)
+    return (flats_list)
 
 
 def main():
@@ -88,8 +120,8 @@ def main():
     html = get_html(REALT_URL)
 
     # Get number of last page
-    page_count = get_page_count(html)
-    #page_count = 1
+    # page_count = get_page_count(html)
+    page_count = 1
     print('Find %d pages' % page_count)
 
     # List with all flats
@@ -105,6 +137,17 @@ def main():
 
     # Print list
     for flat in allflats:
+        print(flat)
+
+    # Write data in csv-file
+    write_csv(allflats, 'Realt.csv')
+
+    # Read data from csv-file
+    fl = read_csv('Realt.csv')
+
+    # Print list
+    print()
+    for flat in fl:
         print(flat)
 
 
