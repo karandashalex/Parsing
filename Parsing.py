@@ -29,9 +29,7 @@ def parse(html):
     # Find in page all flats and append all of them in list
     header = table.find_all('div', class_='bd-table-item-header')
     flats = []
-    i = 0
     for head in header:
-        i += 1
         pl = head.find_all('div', class_='pl')
         address = head.find('div', class_='ad').a.text.split(',')
         floors = head.find('div', class_='ee').span.text.split('/')
@@ -86,14 +84,12 @@ def parse(html):
             'total_price': total_price,
             'price': price
         })
-        if i == 3:
-            break
     return flats
 
 
 # Write all flats in csv-file as dictionary. Russian Windows used delimiter=';' and  lineterminator='\n'
 def write_csv(flats, filename):
-    with open('csv_write_dictwriter.csv', 'w') as f:
+    with open(filename, 'w') as f:
         writer = csv.DictWriter(f, fieldnames=list(flats[0].keys()), quoting=csv.QUOTE_NONNUMERIC, lineterminator='\n',
                                 delimiter=';')
         writer.writeheader()
@@ -104,7 +100,7 @@ def write_csv(flats, filename):
 # Read all data from csv-file and return list of dictionaries
 def read_csv(filename):
     flats_list = []
-    with open('csv_write_dictwriter.csv') as f:
+    with open(filename) as f:
         reader = csv.DictReader(f, lineterminator='\n', delimiter=';')
         for row in reader:
             d = {}
@@ -121,7 +117,7 @@ def main():
 
     # Get number of last page
     # page_count = get_page_count(html)
-    page_count = 1
+    page_count = 10
     print('Find %d pages' % page_count)
 
     # List with all flats
@@ -144,6 +140,7 @@ def main():
 
     # Read data from csv-file
     fl = read_csv('Realt.csv')
+
 
     # Print list
     print()
