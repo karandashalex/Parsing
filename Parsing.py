@@ -4,7 +4,13 @@ import csv
 
 # Main URL of website realt.by
 REALT_URL = 'https://realt.by/sale/flats/?view=0'
-
+# String with parameters for parsing
+param_str = 'sity=Копище'#, rooms>=1, floor>=2, total_price<1040000, floor<15'
+# All parameters used
+params = ['rooms', 'separate_rooms', 'area', 'sity', 'street', 'house', 'floor', 'max_floor', 'house_type',
+          'total_square', 'live_square', 'kitchen_square', 'year', 'repare_year', 'balcony', 'total_price', 'price']
+# All signs used
+signs = ['>=', '<=', '!=', '=', '>', '<']
 
 # Open url and return html
 def get_html(url):
@@ -21,7 +27,7 @@ def get_page_count(html):
 
 
 # Get html and parse one page. Return flats list
-def parse(html):
+def parse_page(html):
     # Get center table with flats
     soup = BeautifulSoup(html, features='html.parser')
     table = soup.find('div', class_='bd-table')
@@ -87,10 +93,32 @@ def parse(html):
     return flats
 
 
+def parse(page=0):
+    print('Start parsing. Wait...')
+    # Get html
+    html = get_html(REALT_URL)
+    if page == 0:
+        # Get number of last page
+        page_count = get_page_count(html)
+    else:
+        page_count = page
+    print('Find %d pages' % page_count)
+    # List with all flats
+    allflats = []
+    # Find flats on all pages
+    for page in range(0, page_count):
+        print('Parsing %d%%' % (page / page_count * 100))
+        html = get_html(REALT_URL + '&page=%d' % page)
+        allflats.extend(parse_page(html))
+    print('Parsing %d records finished' % len(allflats))
+    return allflats
+
+
 # Write all flats in csv-file as dictionary. Russian Windows used delimiter=';' and  lineterminator='\n'
 def write_csv(flats, filename):
     with open(filename, 'w') as f:
-        writer = csv.DictWriter(f, fieldnames=list(flats[0].keys()), quoting=csv.QUOTE_NONNUMERIC, lineterminator='\n',
+        writer = csv.DictWriter(f, fieldnames=list(flats[0].keys()), quoting=csv.QUOTE_NONNUMERIC,
+                                lineterminator='\n',
                                 delimiter=';')
         writer.writeheader()
         for flat in flats:
@@ -109,43 +137,82 @@ def read_csv(filename):
     return (flats_list)
 
 
+# Function create parameters list from string with parameters if string is good. And function create parameters list
+# with error items if string is bad. Еhe first return value is True or False, and second is the list.
+# Which element is list and contains parameter name, parameter sign and value.
+def create_param_list(pr_str, pr, sgn):
+    # Parameters list
+    pr_str_list = pr_str.strip().split(',')
+    # List with good parameters
+    pr_list = []
+    # List with bad parameters
+    err_pr_list = []
+    # The analysis of the sign
+    for p in pr_str_list:
+        for s in sgn:
+            if p.find(s) >= 0:
+                pr_list.append([p.split(s)[0].strip(), s, p.split(s)[1].strip()])
+                break
+        else:
+            err_pr_list.append(p.strip())
+    # The analysis of parameters
+    param_set = set()
+    for z in pr_list:
+        param_set.add(z[0])
+    s = param_set - set(pr)
+    if len(s):
+        err_pr_list.append(', '.join(s))
+    # Finish analysis
+    if len(err_pr_list) > 0:
+        return False, err_pr_list
+    else:
+        return True, pr_list
+
+
+# Compare two volumes used sign
+def compare(vol1, sign, vol2):
+    if sign == '>=':
+        return vol1 >= vol2
+    elif sign == '<=':
+        return vol1 <= vol2
+    elif sign == '!=':
+        return vol1 != vol2
+    elif sign == '=':
+        return vol1 == vol2
+    elif sign == '>':
+        return vol1 > vol2
+    elif sign == '<':
+        return vol1 < vol2
+
+
 def main():
-    print('Start parsing. Wait...')
-
-    # Get html
-    html = get_html(REALT_URL)
-
-    # Get number of last page
-    # page_count = get_page_count(html)
-    page_count = 10
-    print('Find %d pages' % page_count)
-
-    # List with all flats
-    allflats = []
-
-    # Find flats on all pages
-    for page in range(0, page_count):
-        print('Parsing %d%%' % (page / page_count * 100))
-        html = get_html(REALT_URL + '&page=%d' % page)
-        allflats.extend(parse(html))
-
-    print('Parsing finished')
+    # allflats = parse(1)
 
     # Print list
-    for flat in allflats:
-        print(flat)
+    # for flat in allflats:
+    #     print(flat)
 
     # Write data in csv-file
-    write_csv(allflats, 'Realt.csv')
+    # write_csv(allflats, 'Realt.csv')
 
     # Read data from csv-file
     fl = read_csv('Realt.csv')
 
-
     # Print list
-    print()
+    # for flat in fl:
+    #     print(flat)
+
+    a, param_str_list = create_param_list(param_str, params, signs)
+    if not a:
+        print('Error param(s): ' + ', '.join(param_str_list))
+        return
+
     for flat in fl:
-        print(flat)
+        for pr in param_str_list:
+            if not compare(flat[pr[0]], pr[1], pr[2]):
+                break
+        else:
+            print(flat)
 
 
 if __name__ == '__main__':

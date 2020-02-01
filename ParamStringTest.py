@@ -39,8 +39,26 @@ def create_param_list(pr_str, pr, sgn):
         return True, pr_list
 
 
-a, param_str_list = create_param_list(param_str, params, signs)
-if a:
-    print(param_str_list)
-else:
-    print('Error param(s): ' + ', '.join(param_str_list))
+def compare(vol1, sign, vol2):
+    if sign == '>=':
+        return vol1 >= vol2
+    elif sign == '<=':
+        return vol1 <= vol2
+    elif sign == '!=':
+        return vol1 != vol2
+    elif sign == '=':
+        return vol1 == vol2
+    elif sign == '>':
+        return vol1 > vol2
+    elif sign == '<':
+        return vol1 < vol2
+
+
+# a, param_str_list = create_param_list(param_str, params, signs)
+# if a:
+#     print(param_str_list)
+# else:
+#     print('Error param(s): ' + ', '.join(param_str_list))
+
+print(compare('Ми', signs[1], 'Минск'))
+
